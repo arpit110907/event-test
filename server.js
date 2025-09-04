@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname)));
 
 // Connect to MongoDB (with fallback to in-memory storage)
 console.log('Attempting to connect to MongoDB...');
@@ -32,6 +33,8 @@ mongoose.connect('mongodb+srv://admin:jWWwR5EDvFN7srhT@admingavenue.wujpyea.mong
 const ticketSchema = new mongoose.Schema({
   ticketId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
+  attendeeNumber: { type: String, required: true },
+  email: { type: String, required: true },
   type: { type: String, required: true },
   status: { type: String, default: 'valid' }, // valid or checked-in
   createdAt: { type: Date, default: Date.now }
@@ -45,16 +48,17 @@ let tickets = [];
 // Routes
 app.post('/api/tickets', async (req, res) => {
   try {
-    const { name, type, quantity } = req.body;
+    const { name, attendeeNumber, email, type, quantity } = req.body;
     
-    if (!name || !type || !quantity) {
-      return res.status(400).json({ error: 'Name, type, and quantity are required' });
+    if (!name || !attendeeNumber || !email || !type || !quantity) {
+      return res.status(400).json({ error: 'Name, attendee number, email, type, and quantity are required' });
     }
     
     const createdTickets = [];
     
     for (let i = 0; i < quantity; i++) {
-      const ticketId = uuidv4();
+      // Generate 4-digit unique ticket ID
+      const ticketId = Math.floor(1000 + Math.random() * 9000).toString();
       const qrCodePath = path.join(__dirname, 'uploads', `${ticketId}.png`);
       const pdfPath = path.join(__dirname, 'uploads', `${ticketId}.pdf`);
       
@@ -69,7 +73,9 @@ app.post('/api/tickets', async (req, res) => {
       // Add content to PDF
       doc.fontSize(25).text('Event Ticket', { align: 'center' });
       doc.moveDown();
-      doc.fontSize(15).text(`Attendee: ${name}`);
+      doc.fontSize(15).text(`Attendee Name: ${name}`);
+      doc.fontSize(15).text(`Attendee Number: ${attendeeNumber}`);
+      doc.fontSize(15).text(`Email: ${email}`);
       doc.fontSize(15).text(`Ticket Type: ${type}`);
       doc.fontSize(15).text(`Ticket ID: ${ticketId}`);
       doc.moveDown();
@@ -92,6 +98,8 @@ app.post('/api/tickets', async (req, res) => {
         ticket = new Ticket({
           ticketId,
           name,
+          attendeeNumber,
+          email,
           type,
           status: 'valid'
         });
@@ -101,6 +109,8 @@ app.post('/api/tickets', async (req, res) => {
         ticket = {
           ticketId,
           name,
+          attendeeNumber,
+          email,
           type,
           status: 'valid',
           createdAt: new Date()
@@ -234,6 +244,11 @@ app.get('/api/tickets/:id/validate', async (req, res) => {
     console.error('Error validating ticket:', error);
     res.status(500).json({ error: 'Failed to validate ticket', valid: false });
   }
+});
+
+// Serve the main HTML file for any other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server

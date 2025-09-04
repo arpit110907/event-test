@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Ticketing & Check-in System</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ticket-list {
+            margin-top: 30px;
+        }
+
+        .ticket-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ticket-id {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .ticket-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-valid {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-checked-in {
+            background: #6c757d;
+            color: white;
+        }
+
+        .ticket-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .checkin-section {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .qr-scanner {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .qr-input {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .camera-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #qr-video {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .camera-controls {
+            margin: 15px 0;
+        }
+
+        .btn-camera {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: background 0.3s ease;
+        }
+
+        .btn-camera:hover {
+            background: #218838;
+        }
+
+        .btn-camera:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .scanner-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .status-scanning {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .scanning-overlay {
+            position: relative;
+            display: inline-block;
+        }
+
+        .scanning-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid #28a745;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        }
+
+        .scanning-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #28a745;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .result-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        .result-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .result-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+            
+            #qr-video {
+                max-width: 100%;
+                height: 250px;
+            }
+            
+            .scanning-frame {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .camera-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn-camera {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎫 Event Ticketing System</h1>
+            <p>Manage tickets and check-in attendees</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('admin')">Admin Panel</button>
+            <button class="nav-tab" onclick="showTab('checkin')">Check-in</button>
+            <button class="nav-tab" onclick="showTab('tickets')">View Tickets</button>
+        </div>
+
+        <!-- Admin Panel Tab -->
+        <div id="admin" class="tab-content active">
+            <h2>Create New Tickets</h2>
+            <form id="ticketForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Attendee Name *</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="attendeeNumber">Attendee Number *</label>
+                        <input type="text" id="attendeeNumber" name="attendeeNumber" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Ticket Type *</label>
+                        <select id="type" name="type" required>
+                            <option value="">Select ticket type</option>
+                            <option value="General">General</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Premium">Premium</option>
+                            <option value="Student">Student</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity *</label>
+                    <input type="number" id="quantity" name="quantity" min="1" max="10" value="1" required>
+                </div>
+                <button type="submit" class="btn">Generate Tickets</button>
+            </form>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generating tickets...</p>
+            </div>
+        </div>
+
+        <!-- Check-in Tab -->
+        <div id="checkin" class="tab-content">
+            <div class="checkin-section">
+                <h2>🎯 Ticket Check-in</h2>
+                
+                <!-- QR Code Scanner -->
+                <div class="qr-scanner">
+                    <h3>📱 QR Code Scanner</h3>
+                    <p>Use your device camera to scan QR codes automatically</p>
+                    
+                    <div class="camera-container">
+                        <div class="scanning-overlay">
+                            <video id="qr-video" autoplay muted playsinline></video>
+                            <div class="scanning-frame">
+                                <div class="scanning-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="camera-controls">
+                        <button id="startCamera" class="btn-camera">🎥 Start Camera</button>
+                        <button id="stopCamera" class="btn-camera" disabled>⏹️ Stop Camera</button>
+                        <button id="switchCamera" class="btn-camera" disabled>🔄 Switch Camera</button>
+                    </div>
+                    
+                    <div id="scannerStatus" class="scanner-status" style="display: none;"></div>
+                </div>
+
+                <!-- Manual Entry -->
+                <div class="qr-scanner">
+                    <h3>⌨️ Manual Entry</h3>
+                    <p>Or manually enter the 4-digit ticket ID</p>
+                    <input type="text" id="ticketIdInput" class="form-group input qr-input" placeholder="Enter 4-digit Ticket ID" maxlength="4" pattern="[0-9]{4}">
+                    <button onclick="checkInTicket()" class="btn">Check-in Ticket</button>
+                </div>
+                
+                <div id="checkinResult"></div>
+            </div>
+        </div>
+
+        <!-- View Tickets Tab -->
+        <div id="tickets" class="tab-content">
+            <h2>All Tickets</h2>
+            <button onclick="loadTickets()" class="btn">Refresh Tickets</button>
+            <div class="ticket-list" id="ticketList">
+                <p>Click "Refresh Tickets" to load all tickets</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Load tickets if viewing tickets tab
+            if (tabName === 'tickets') {
+                loadTickets();
+            }
+        }
+
+        // Create tickets
+        document.getElementById('ticketForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                name: formData.get('name'),
+                attendeeNumber: formData.get('attendeeNumber'),
+                email: formData.get('email'),
+                type: formData.get('type'),
+                quantity: parseInt(formData.get('quantity'))
+            };
+
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/tickets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Successfully created ${result.length} ticket(s)!`);
+                    e.target.reset();
+                    // Switch to tickets tab to show the new tickets
+                    showTab('tickets');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error creating tickets: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        // Check-in ticket
+        async function checkInTicket() {
+            const ticketId = document.getElementById('ticketIdInput').value.trim();
+            const resultDiv = document.getElementById('checkinResult');
+
+            if (!ticketId || ticketId.length !== 4) {
+                resultDiv.innerHTML = '<div class="result-message result-error">Please enter a valid 4-digit ticket ID</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/tickets/${ticketId}/checkin`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result-message result-success">
+                            ✅ Ticket ${ticketId} checked in successfully!<br>
+                            Attendee: ${result.ticket.name}<br>
+                            Type: ${result.ticket.type}
+                        </div>
+                    `;
+                } else {
+                    if (result.alreadyCheckedIn) {
+                        resultDiv.innerHTML = `
+                            <div class="result-message result-warning">
+                                ⚠️ Ticket ${ticketId} has already been checked in<br>
+                                Attendee: ${result.ticket.name}<br>
+                                Type: ${result.ticket.type}
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="result-message result-error">
+                                ❌ ${result.error}
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result-message result-error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+
+            // Clear input
+            document.getElementById('ticketIdInput').value = '';
+        }
+
+        // Load all tickets
+        async function loadTickets() {
+            const ticketList = document.getElementById('ticketList');
+            ticketList.innerHTML = '<p>Loading tickets...</p>';
+
+            try {
+                const response = await fetch('/api/tickets');
+                const tickets = await response.json();
+
+                if (tickets.length === 0) {
+                    ticketList.innerHTML = '<p>No tickets found</p>';
+                    return;
+                }
+
+                const ticketsHtml = tickets.map(ticket => `
+                    <div class="ticket-item">
+                        <div class="ticket-header">
+                            <span class="ticket-id">#${ticket.ticketId}</span>
+                            <span class="ticket-status status-${ticket.status}">${ticket.status}</span>
+                        </div>
+                        <div>
+                            <p><strong>Name:</strong> ${ticket.name}</p>
+                            <p><strong>Number:</strong> ${ticket.attendeeNumber}</p>
+                            <p><strong>Email:</strong> ${ticket.email}</p>
+                            <p><strong>Type:</strong> ${ticket.type}</p>
+                            <p><strong>Created:</strong> ${new Date(ticket.createdAt).toLocaleString()}</p>
+                        </div>
+                        <div class="ticket-actions">
+                            <a href="/api/tickets/${ticket.ticketId}/qr" target="_blank" class="btn-secondary">View QR</a>
+                            <a href="/api/tickets/${ticket.ticketId}/pdf" target="_blank" class="btn-secondary">Download PDF</a>
+                        </div>
+                    </div>
+                `).join('');
+
+                ticketList.innerHTML = ticketsHtml;
+            } catch (error) {
+                ticketList.innerHTML = '<p>Error loading tickets: ' + error.message + '</p>';
+            }
+        }
+
+        // Allow Enter key to submit check-in
+        document.getElementById('ticketIdInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkInTicket();
+            }
+        });
+
+        // QR Code Scanner functionality
+        let stream = null;
+        let currentFacingMode = 'environment'; // Start with back camera
+        let scanInterval = null;
+
+        // Start camera
+        document.getElementById('startCamera').addEventListener('click', startCamera);
+        
+        // Stop camera
+        document.getElementById('stopCamera').addEventListener('click', stopCamera);
+        
+        // Switch camera
+        document.getElementById('switchCamera').addEventListener('click', switchCamera);
+
+        async function startCamera() {
+            try {
+                // Check if camera is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera not supported in this browser');
+                }
+
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('qr-video');
+                video.srcObject = stream;
+
+                // Wait for video to be ready
+                video.onloadedmetadata = () => {
+                    video.play();
+                    
+                    // Update button states
+                    document.getElementById('startCamera').disabled = true;
+                    document.getElementById('stopCamera').disabled = false;
+                    document.getElementById('switchCamera').disabled = false;
+
+                    // Show scanning status
+                    showScannerStatus('Camera started. Point at a QR code to scan.', 'scanning');
+
+                    // Start QR code detection
+                    startQRDetection();
+                };
+
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                let errorMessage = 'Camera access denied. ';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMessage += 'Please allow camera access and refresh the page.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage += 'No camera found on this device.';
+                } else if (error.name === 'NotSupportedError') {
+                    errorMessage += 'Camera not supported in this browser.';
+                } else {
+                    errorMessage += 'Please check permissions and try again.';
+                }
+                
+                showScannerStatus(errorMessage, 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            const video = document.getElementById('qr-video');
+            video.srcObject = null;
+
+            // Update button states
+            document.getElementById('startCamera').disabled = false;
+            document.getElementById('stopCamera').disabled = true;
+            document.getElementById('switchCamera').disabled = true;
+
+            // Hide scanning status
+            hideScannerStatus();
+
+            // Stop QR detection
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+        }
+
+        async function switchCamera() {
+            if (stream) {
+                stopCamera();
+                // Wait a bit before starting new camera
+                setTimeout(() => {
+                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                    startCamera();
+                }, 500);
+            }
+        }
+
+        function showScannerStatus(message, type) {
+            const statusDiv = document.getElementById('scannerStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `scanner-status status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function hideScannerStatus() {
+            const statusDiv = document.getElementById('scannerStatus');
+            statusDiv.style.display = 'none';
+        }
+
+        function startQRDetection() {
+            const video = document.getElementById('qr-video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            scanInterval = setInterval(() => {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // Get image data for QR detection
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Simple QR code detection (basic pattern matching)
+                    // In a real implementation, you'd use a library like jsQR or ZXing
+                    detectQRCode(imageData);
+                }
+            }, 100); // Check every 100ms
+        }
+
+        function detectQRCode(imageData) {
+            try {
+                // Use jsQR library for actual QR code detection
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+                
+                if (code) {
+                    console.log('QR Code detected:', code.data);
+                    handleQRCode(code.data);
+                }
+            } catch (error) {
+                console.error('Error in QR detection:', error);
+            }
+        }
+
+        function handleQRCode(qrData) {
+            // Stop scanning when QR code is detected
+            stopCamera();
+            
+            // Check if the QR data is a valid ticket ID (4 digits)
+            if (/^\d{4}$/.test(qrData)) {
+                // Auto-fill the ticket ID input
+                document.getElementById('ticketIdInput').value = qrData;
+                
+                // Show success message with auto-check-in
+                showScannerStatus(`✅ QR Code detected: ${qrData}. Auto-checking in...`, 'scanning');
+                
+                // Auto-check-in after a short delay
+                setTimeout(() => {
+                    checkInTicket();
+                }, 1500);
+            } else {
+                showScannerStatus(`❌ Invalid QR code format: ${qrData}. Expected 4-digit ticket ID.`, 'error');
+                
+                // Re-enable camera after showing error
+                setTimeout(() => {
+                    document.getElementById('startCamera').disabled = false;
+                }, 3000);
+            }
+        }
+
+        // Load tickets on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTickets();
+        });
+    </script>
+</body>
+</html>
